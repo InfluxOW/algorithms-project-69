@@ -2,9 +2,10 @@
     "name": "hexlet/code",
     "type": "project",
     "autoload": {
-        "psr-4": {
-            "App\\": "src/"
-        }
+        "files": [
+            "src/Engine.php",
+            "src/index.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

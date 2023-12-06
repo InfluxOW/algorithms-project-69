@@ -2,8 +2,9 @@
 
 namespace App\Tests;
 
-use App\Engine;
 use PHPUnit\Framework\TestCase;
+
+use function App\search;
 
 class EngineTest extends TestCase
 {
@@ -14,7 +15,7 @@ class EngineTest extends TestCase
      */
     public function it_can_search(array $documents, string $search, array $found): void
     {
-        $this->assertEquals(Engine::search($documents, $search), $found);
+        $this->assertEquals(search($documents, $search), $found);
     }
 
     public static function searchDataProvider(): array
