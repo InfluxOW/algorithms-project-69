@@ -20,9 +20,9 @@ class EngineTest extends TestCase
     public static function searchDataProvider(): array
     {
         $documents = [
-            ['id' => 1, 'text' => 'I can\'t shoot straight unless I\'ve had a pint!'],
-            ['id' => 2, 'text' => 'Don\'t shoot shoot shoot that thing at me.'],
-            ['id' => 3, 'text' => 'I\'m your shooter.'],
+            ['id' => 'document #1', 'text' => 'I can\'t shoot straight unless I\'ve had a pint!'],
+            ['id' => 'document #2', 'text' => 'Don\'t shoot shoot shoot that thing at me.'],
+            ['id' => 'document #3', 'text' => 'I\'m your shooter.'],
         ];
 
         return [
@@ -34,12 +34,12 @@ class EngineTest extends TestCase
             [
                 $documents,
                 'shoot',
-                [1, 2],
+                ['document #2', 'document #1'],
             ],
             [
                 $documents,
                 'pint',
-                [1],
+                ['document #1'],
             ],
         ];
     }

@@ -19,13 +19,17 @@ final class Engine
         $regexp = "/\b{$search}\b/iu";
 
         return collect($documents)
-            ->map(function (array $document): array {
-                $document['text'] = self::term($document['text']);
+            ->mapWithKeys(function (array $document) use ($regexp): array {
+                $term = self::term($document['text']);
+                $matches_count = Str::of($term)
+                    ->matchAll($regexp)
+                    ->count();
 
-                return $document;
+                return [$document['id'] => $matches_count];
             })
-            ->filter(fn (array $document): bool => preg_match($regexp, $document['text']))
-            ->map(fn (array $document): string => $document['id'])
+            ->reject(fn (int $matches_count, string|int $id): bool => $matches_count === 0)
+            ->sortByDesc(fn (int $matches_count, string|int $id): int => $matches_count)
+            ->keys()
             ->toArray();
     }
 
