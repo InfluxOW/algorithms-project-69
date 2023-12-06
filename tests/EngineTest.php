@@ -41,6 +41,11 @@ class EngineTest extends TestCase
                 'pint',
                 ['document #1'],
             ],
+            [
+                $documents,
+                'shoot at me',
+                ['document #2', 'document #1'],
+            ],
         ];
     }
 }

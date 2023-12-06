@@ -16,19 +16,24 @@ final class Engine
     {
         $search = self::term($search);
 
-        $regexp = "/\b{$search}\b/iu";
+        $regexps = Str::of($search)
+            ->explode(' ')
+            ->map(fn (string $search) => "/\b{$search}\b/iu")
+            ->toArray();
 
         return collect($documents)
-            ->mapWithKeys(function (array $document) use ($regexp): array {
-                $term = self::term($document['text']);
-                $matches_count = Str::of($term)
-                    ->matchAll($regexp)
-                    ->count();
+            ->mapWithKeys(function (array $document) use ($regexps): array {
+                $text = self::term($document['text']);
 
-                return [$document['id'] => $matches_count];
+                $matches = collect($regexps)
+                    ->mapWithKeys(fn (string $regexp, int $i) => [$i => Str::of($text)->matchAll($regexp)->count()])
+                    ->reject(fn (int $matches_count): bool => $matches_count === 0)
+                    ->toArray();
+
+                return [$document['id'] => $matches];
             })
-            ->reject(fn (int $matches_count, string|int $id): bool => $matches_count === 0)
-            ->sortByDesc(fn (int $matches_count, string|int $id): int => $matches_count)
+            ->reject(fn (array $matches): bool => empty($matches))
+            ->sortByDesc(fn (array $matches): array => [count($matches), array_sum($matches)])
             ->keys()
             ->toArray();
     }
