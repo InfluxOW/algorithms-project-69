@@ -35,7 +35,7 @@ class EngineTest extends TestCase
                 $documents,
                 'shoot',
                 [1, 2],
-            ]
+            ],
         ];
     }
 }
