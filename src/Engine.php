@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 final class Engine
@@ -15,25 +16,57 @@ final class Engine
     public static function search(array $documents, string $search): array
     {
         $search = self::term($search);
+        $searches = explode(' ', $search);
 
-        $regexps = Str::of($search)
-            ->explode(' ')
-            ->map(fn (string $search) => "/\b{$search}\b/iu")
-            ->toArray();
+        $documents_count = count($documents);
+
+        $word_counts = [];
+        foreach ($documents as $document) {
+            $word_counts[$document['id']] = str_word_count($document['text']);
+        }
 
         return collect($documents)
-            ->mapWithKeys(function (array $document) use ($regexps): array {
+            ->mapWithKeys(function (array $document) use ($searches): array {
                 $text = self::term($document['text']);
 
-                $matches = collect($regexps)
-                    ->mapWithKeys(fn (string $regexp, int $i) => [$i => Str::of($text)->matchAll($regexp)->count()])
+                $matches = collect($searches)
+                    ->mapWithKeys(fn (string $search): array => [$search => Str::of($text)->matchAll("/\b{$search}\b/iu")->count()])
                     ->reject(fn (int $matches_count): bool => $matches_count === 0)
                     ->toArray();
 
                 return [$document['id'] => $matches];
             })
             ->reject(fn (array $matches): bool => empty($matches))
-            ->sortByDesc(fn (array $matches): array => [count($matches), array_sum($matches)])
+            ->reduce(function (Collection $acc, array $matches, string|int $id): Collection {
+                foreach ($matches as $search => $matches_count) {
+                    $match = $acc->offsetExists($search) ? $acc->offsetGet($search) : [];
+                    $match[$id] = $matches_count;
+
+                    $acc->offsetSet($search, $match);
+                }
+
+                return $acc;
+            }, collect([]))
+            ->map(function (array $matches) use ($documents_count, $word_counts): array {
+                $idf = log((1 + ($documents_count - count($matches) + 1) / (count($matches) + 0.5)), 2);
+
+                foreach ($matches as $id => $matches_count) {
+                    $matches[$id] = $idf * $matches_count / $word_counts[$id];
+                }
+
+                return $matches;
+            })
+            ->reduce(function (Collection $acc, array $matches): Collection {
+                foreach ($matches as $id => $weight) {
+                    $sum = $acc->offsetExists($id) ? $acc->offsetGet($id) : 0;
+                    $sum += $weight;
+
+                    $acc->offsetSet($id, $sum);
+                }
+
+                return $acc;
+            }, collect([]))
+            ->sortByDesc(fn (float $weight, $b): float => $weight)
             ->keys()
             ->toArray();
     }
