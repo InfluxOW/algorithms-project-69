@@ -2,6 +2,8 @@
 
 namespace App;
 
+use Illuminate\Support\Str;
+
 final class Engine
 {
     /**
@@ -12,15 +14,23 @@ final class Engine
      */
     public static function search(array $documents, string $search): array
     {
+        $search = self::term($search);
+
         $regexp = "/\b{$search}\b/iu";
 
-        $found = [];
-        foreach ($documents as $document) {
-            if (preg_match($regexp, $document['text'])) {
-                $found[] = $document['id'];
-            }
-        }
+        return collect($documents)
+            ->map(function (array $document): array {
+                $document['text'] = self::term($document['text']);
 
-        return $found;
+                return $document;
+            })
+            ->filter(fn (array $document): bool => preg_match($regexp, $document['text']))
+            ->map(fn (array $document): string => $document['id'])
+            ->toArray();
+    }
+
+    private static function term(string $token): string
+    {
+        return Str::of($token)->matchAll('/\w+/')->implode(' ');
     }
 }

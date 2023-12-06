@@ -19,7 +19,7 @@
     ],
     "require": {
         "php": "^8.2",
-        "tightenco/collect": "^9.52"
+        "illuminate/support": "^10.35"
     },
     "require-dev": {
         "phpstan/phpstan": "^1.10",
