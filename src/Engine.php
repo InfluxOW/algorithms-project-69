@@ -30,7 +30,9 @@ final class Engine
                 $text = self::term($document['text']);
 
                 $matches = collect($searches)
-                    ->mapWithKeys(fn (string $search): array => [$search => Str::of($text)->matchAll("/\b{$search}\b/iu")->count()])
+                    ->mapWithKeys(fn (string $search): array => [
+                        $search => Str::of($text)->matchAll("/\b{$search}\b/iu")->count(),
+                    ])
                     ->reject(fn (int $matches_count): bool => $matches_count === 0)
                     ->toArray();
 

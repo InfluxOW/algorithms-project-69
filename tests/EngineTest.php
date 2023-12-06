@@ -9,11 +9,9 @@ use function App\search;
 class EngineTest extends TestCase
 {
     /**
-     * @test
-     *
      * @dataProvider searchDataProvider
      */
-    public function it_can_search(array $documents, string $search, array $found): void
+    public function testItCanSearch(array $documents, string $search, array $found): void
     {
         $this->assertEquals(search($documents, $search), $found);
     }
