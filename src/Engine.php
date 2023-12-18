@@ -26,6 +26,14 @@ final class Engine
         }
 
         return collect($documents)
+            /*
+             * Create a map of matches for every document.
+             *
+             * [
+             *  'document_id' => ['search_term_1' => 3, ...],
+             *  ...
+             * ]
+             * */
             ->mapWithKeys(function (array $document) use ($searches): array {
                 $text = self::term($document['text']);
 
@@ -39,31 +47,41 @@ final class Engine
                 return [$document['id'] => $matches];
             })
             ->reject(fn (array $matches): bool => empty($matches))
-            ->reduce(function (Collection $acc, array $matches, string|int $id): Collection {
+            /*
+             * Change structure of the map.
+             *
+             * [
+             *  'search_term_1' => ['document_id' => 3, ...],
+             *  ...
+             * ]
+             * */
+            ->reduce(function (Collection $acc, array $matches, string|int $document_id): Collection {
                 foreach ($matches as $search => $matches_count) {
                     $match = $acc->offsetExists($search) ? $acc->offsetGet($search) : [];
-                    $match[$id] = $matches_count;
+                    $match[$document_id] = $matches_count;
 
                     $acc->offsetSet($search, $match);
                 }
 
                 return $acc;
             }, collect([]))
+             // Calculate weight for every document within a match.
             ->map(function (array $matches) use ($documents_count, $word_counts): array {
                 $idf = log((1 + ($documents_count - count($matches) + 1) / (count($matches) + 0.5)), 2);
 
-                foreach ($matches as $id => $matches_count) {
-                    $matches[$id] = $idf * $matches_count / $word_counts[$id];
+                foreach ($matches as $document_id => $matches_count) {
+                    $matches[$document_id] = $idf * $matches_count / $word_counts[$document_id];
                 }
 
                 return $matches;
             })
+            // Calculate total weight for every document.
             ->reduce(function (Collection $acc, array $matches): Collection {
-                foreach ($matches as $id => $weight) {
-                    $sum = $acc->offsetExists($id) ? $acc->offsetGet($id) : 0;
+                foreach ($matches as $document_id => $weight) {
+                    $sum = $acc->offsetExists($document_id) ? $acc->offsetGet($document_id) : 0;
                     $sum += $weight;
 
-                    $acc->offsetSet($id, $sum);
+                    $acc->offsetSet($document_id, $sum);
                 }
 
                 return $acc;
